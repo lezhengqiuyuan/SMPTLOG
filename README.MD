@@ -10,6 +10,8 @@
   <img alt="License" src="https://img.shields.io/badge/License-GPLv3-blue">
 </p>
 
+**中文** | [English](README.en.md)
+
 ---
 
 ## 这是什么
