@@ -60,9 +60,21 @@ class Pbkdf2 {
 class CipherBox {
   static const _magic = 'SLG1';
 
-  /// 由密码派生密钥（带随机盐）。
+  /// 由密码派生固定的盐。
+  ///
+  /// 关键：默认盐必须**只跟密码有关**，否则两台设备输入同一密码会得到不同密钥，
+  /// A 设备加密的数据 B 设备永远解不开（GCM 认证失败）。
+  /// 实测依据：旧实现每次调用 `_randomBytes(16)`，而解密用的是本地密钥
+  /// （`sync_service.dart` 的 `_decode`），所以跨设备必然不匹配。
+  /// 随机性由密码本身提供，IV 仍然每次随机，不影响语义安全。
+  static Uint8List deriveSalt(String password) {
+    final h = sha256.convert(utf8.encode('SMPTLOG-E2E-v1:$password'));
+    return Uint8List.fromList(h.bytes.sublist(0, 16));
+  }
+
+  /// 由密码派生密钥（盐由密码确定，跨设备一致）。
   static ({Uint8List key, Uint8List salt}) deriveKey(String password) {
-    final salt = _randomBytes(16);
+    final salt = deriveSalt(password);
     final key = Pbkdf2.derive(password, salt);
     return (key: key, salt: salt);
   }

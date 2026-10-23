@@ -120,6 +120,8 @@ class ImportService {
     var dup = 0;
 
     final batch = <Qso>[];
+    // 还没落库的记录（批量未 flush），供同批判重使用
+    final recent = <Qso>[];
 
     Future<void> flush() async {
       if (batch.isEmpty) return;
@@ -142,7 +144,24 @@ class ImportService {
         var toInsert = q;
         if (windowMinutes > 0) {
           final dups = db.findDuplicates(q, windowMinutes);
-          if (dups.isNotEmpty) {
+          // 同一批里还没落库的记录也要参与判重，
+          // 否则一份 ADIF 自带的重复记录会全部被插入。
+          DateTime? memTime;
+          if (dups.isEmpty) {
+            final win = Duration(minutes: windowMinutes).inMilliseconds;
+            final t = q.qsoTimeUtc.millisecondsSinceEpoch;
+            for (var k = recent.length - 1; k >= 0; k--) {
+              final r = recent[k];
+              if ((r.qsoTimeUtc.millisecondsSinceEpoch - t).abs() > win) {
+                continue;
+              }
+              if (Callsign.base(r.call) != Callsign.base(q.call)) continue;
+              if (r.band != q.band || r.mode != q.mode) continue;
+              memTime = r.qsoTimeUtc;
+              break;
+            }
+          }
+          if (dups.isNotEmpty || memTime != null) {
             dup++;
             if (policy == DupPolicy.skip) {
               skipped++;
@@ -150,7 +169,8 @@ class ImportService {
               continue;
             }
             if (policy == DupPolicy.markKept) {
-              final mark = '[疑似重复 ${Fmt.dateTimeUtc(dups.first.qsoTimeUtc)}]';
+              final ref = dups.isNotEmpty ? dups.first.qsoTimeUtc : memTime!;
+              final mark = '[疑似重复 ${Fmt.dateTimeUtc(ref)}]';
               toInsert = q.copyWith(
                 remark: q.remark.isEmpty ? mark : '$mark ${q.remark}',
               );
@@ -158,6 +178,8 @@ class ImportService {
           }
         }
         batch.add(toInsert);
+        recent.add(toInsert);
+        if (recent.length > 2000) recent.removeAt(0);
         if (batch.length >= 500) await flush();
       }
       onProgress?.call(i + 1, total);

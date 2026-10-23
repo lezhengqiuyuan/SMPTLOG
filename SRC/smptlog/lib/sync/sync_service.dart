@@ -552,9 +552,10 @@ class SyncService {
 
     final maxSeq =
         entries.map((e) => e['seq'] as int).reduce((a, b) => a > b ? a : b);
-    db.clearOplogUpTo(ds, maxSeq);
-
+    // 先写 meta 再清 oplog：若 meta 写失败，oplog 仍在，下次还能重传；
+    // 反过来（先清后写）一旦 meta 失败，数据就永久丢了。
     await _writeMeta(ds, cfg);
+    db.clearOplogUpTo(ds, maxSeq);
   }
 
   Future<void> _writeMeta(String ds, SyncConfig cfg) async {
@@ -589,8 +590,8 @@ class SyncService {
 
     final maxSeq =
         entries.map((e) => e['seq'] as int).reduce((a, b) => a > b ? a : b);
-    db.clearOplogUpTo(ds, maxSeq);
     await _writeMeta(ds, cfg);
+    db.clearOplogUpTo(ds, maxSeq);
   }
 
   void restoreConflict(ConflictEntry c) {

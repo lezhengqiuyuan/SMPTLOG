@@ -150,6 +150,27 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter pub get
 
+      # 正式签名：仓库 Secrets 里配置好才会使用，
+      # 否则回退 debug 签名（两个版本的签名不同，无法覆盖升级，仅供测试）。
+      - name: 配置 Android 签名
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::未配置 ANDROID_KEYSTORE_BASE64，本次使用 debug 签名"
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > SRC/smptlog/android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=$RUNNER_TEMP/release.jks
+          EOF
+          echo "已配置正式签名：$KEY_ALIAS"
       - name: 构建 APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter build apk --release --tree-shake-icons
