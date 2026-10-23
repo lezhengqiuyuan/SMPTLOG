@@ -351,6 +351,12 @@ class AppState extends ChangeNotifier {
     String davPassword = '',
   }) async {
     final secrets = await SecretsVault.read();
+    // 换后端 / 换端点后，旧后端已清空 oplog，新后端拿不到历史数据，
+    // 所以需要把全部本地记录重新排队一次。
+    final changed = (secrets['backend'] ?? '') != backend ||
+        (secrets['projectId'] ?? '') != projectId ||
+        (secrets['davUrl'] ?? '') != davUrl ||
+        (secrets['davUser'] ?? '') != davUser;
     secrets['backend'] = backend;
     secrets['projectId'] = projectId;
     secrets['apiToken'] = token;
@@ -360,6 +366,11 @@ class AppState extends ChangeNotifier {
     await SecretsVault.write(secrets);
     syncService.resetClient();
     await reloadSecrets();
+
+    if (changed && backend != SyncBackendType.off) {
+      final n = db.reenqueueAll();
+      if (n > 0) notifyListeners();
+    }
   }
 
   /// 开启/关闭端到端加密。开启需要密码。

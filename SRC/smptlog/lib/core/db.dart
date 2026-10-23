@@ -304,8 +304,32 @@ class AppDb {
     return _qsoFromRow(rs.first);
   }
 
+  bool _inTxn = false;
+
+  /// 在单个事务中执行；已在事务内时直接执行（SQLite 不支持嵌套 BEGIN）。
+  T _atomic<T>(T Function() body) {
+    if (_inTxn) return body();
+    _db.execute('BEGIN');
+    _inTxn = true;
+    try {
+      final r = body();
+      _db.execute('COMMIT');
+      return r;
+    } catch (_) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    } finally {
+      _inTxn = false;
+    }
+  }
+
+  /// 单条写入：业务表与 oplog 必须在同一事务内，
+  /// 否则两步之间崩溃会「本地已存、同步日志缺失」。
+  bool upsertQso(Qso q, {bool log = true}) =>
+      _atomic(() => _upsertQsoRaw(q, log: log));
+
   /// 写入一条 QSO。若本地记录的 updatedAt 更新则拒绝覆盖（保护本地新数据）。
-  bool upsertQso(Qso q, {bool log = true}) {
+  bool _upsertQsoRaw(Qso q, {bool log = true}) {
     final existing = _db.select(
       'SELECT updated_at FROM qsos WHERE uuid=?',
       [q.uuid],
@@ -378,16 +402,11 @@ class AppDb {
   int upsertQsos(List<Qso> list, {bool log = true}) {
     if (list.isEmpty) return 0;
     var n = 0;
-    _db.execute('BEGIN');
-    try {
+    _atomic(() {
       for (final q in list) {
-        if (upsertQso(q, log: log)) n++;
+        if (_upsertQsoRaw(q, log: log)) n++;
       }
-      _db.execute('COMMIT');
-    } catch (_) {
-      _db.execute('ROLLBACK');
-      rethrow;
-    }
+    });
     return n;
   }
 
@@ -422,6 +441,30 @@ class AppDb {
       'DELETE FROM qsos WHERE deleted=1 AND updated_at < ?',
       [cutoff],
     );
+  }
+
+  /// 切换同步后端后，把全部本地数据重新排队上传。
+  ///
+  /// 原因：旧后端上传成功时 oplog 已被清空，新后端拿不到历史数据，
+  /// 另一台设备只能看到切换之后的改动。
+  int reenqueueAll() {
+    var n = 0;
+    _atomic(() {
+      _db.execute('DELETE FROM oplog');
+      for (final q in allQsos()) {
+        _appendOplog('qso', q.uuid, q.toJson());
+        n++;
+      }
+      for (final r in allRepeaters()) {
+        _appendOplog('repeater', r.id, r.toJson());
+        n++;
+      }
+      for (final s in allStations()) {
+        _appendOplog('station', s.id, s.toJson());
+        n++;
+      }
+    });
+    return n;
   }
 
   void bulkUpdateQsl(List<String> uuids, int status, {String deviceId = ''}) {
@@ -687,7 +730,10 @@ class AppDb {
 
   // ----------------------------------------------------------- Repeater
 
-  void upsertRepeater(Repeater r, {bool log = true}) {
+  void upsertRepeater(Repeater r, {bool log = true}) =>
+      _atomic(() => _upsertRepeaterRaw(r, log: log));
+
+  void _upsertRepeaterRaw(Repeater r, {bool log = true}) {
     _db.execute('''
       INSERT INTO repeaters (id, name, call, downlink, offset_mhz, tx_tone,
         rx_tone, mode, band, color_code, reflector, qth, locator, open_time,
@@ -799,7 +845,10 @@ class AppDb {
 
   // ------------------------------------------------------------ Station
 
-  void upsertStation(StationProfile s, {bool log = true}) {
+  void upsertStation(StationProfile s, {bool log = true}) =>
+      _atomic(() => _upsertStationRaw(s, log: log));
+
+  void _upsertStationRaw(StationProfile s, {bool log = true}) {
     _db.execute('''
       INSERT INTO stations (id, name, my_call, my_grid, rig, antenna, power,
         qth, is_default, created_at, updated_at, deleted, device_id)

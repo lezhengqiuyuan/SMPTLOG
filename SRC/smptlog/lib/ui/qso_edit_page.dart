@@ -51,6 +51,9 @@ class _QsoEditPageState extends State<QsoEditPage> {
   String _stationId = '';
   String _stationName = '';
 
+  /// 己方呼号：选中电台档案时一并带入，并写进每条通联记录
+  String _myCall = '';
+
   bool get _isEdit => widget.initial != null;
 
   @override
@@ -84,6 +87,7 @@ class _QsoEditPageState extends State<QsoEditPage> {
       _tone = q.tone;
       _stationId = q.stationId;
       _stationName = q.stationName;
+      _myCall = q.myCall;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -93,6 +97,7 @@ class _QsoEditPageState extends State<QsoEditPage> {
           setState(() {
             _stationId = def.first.id;
             _stationName = def.first.name;
+            _myCall = def.first.myCall;
             _myGrid.text = def.first.myGrid;
             _rig.text = def.first.rig;
             _antenna.text = def.first.antenna;
@@ -625,6 +630,7 @@ class _QsoEditPageState extends State<QsoEditPage> {
       for (final s in stations) {
         if (s.id == id) {
           _stationName = s.name;
+          _myCall = s.myCall;
           if (s.myGrid.isNotEmpty) _myGrid.text = s.myGrid;
           if (s.rig.isNotEmpty) _rig.text = s.rig;
           if (s.antenna.isNotEmpty) _antenna.text = s.antenna;
@@ -732,6 +738,7 @@ class _QsoEditPageState extends State<QsoEditPage> {
       tone: _viaRepeater ? _tone : '',
       stationId: _stationId,
       stationName: _stationName,
+      myCall: _myCall,
       createdAt: base?.createdAt,
       updatedAt: DateTime.now().toUtc(),
       deleted: false,
