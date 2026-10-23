@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'core/update_checker.dart';
 import 'state.dart';
 import 'ui/about_page.dart';
 import 'ui/common.dart';
@@ -120,7 +121,14 @@ class _ShellPageState extends State<ShellPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: PageBody(child: _body()),
+        child: PageBody(
+          child: Column(
+            children: [
+              if (app.showUpdateBanner) _updateBanner(context, app),
+              Expanded(child: _body()),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: w < Breakpoints.phone && _index == 1
           ? FloatingActionButton.extended(
@@ -361,6 +369,57 @@ class _ShellPageState extends State<ShellPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 顶部更新提醒条：发现新版本时显示，可关闭。
+  Widget _updateBanner(BuildContext context, AppState app) {
+    final info = app.availableUpdate;
+    if (info == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.system_update_alt,
+              size: 17, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '发现新版本 v${info.latest}（当前 v$kAppVersion）',
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textMain,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await PlatformLinks.open(info.url);
+              } catch (_) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('链接已复制：${info.url}')),
+                );
+              }
+            },
+            child: const Text('去下载'),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: '本次忽略',
+            onPressed: app.dismissUpdate,
+            icon: const Icon(Icons.close, size: 16),
+          ),
+        ],
       ),
     );
   }

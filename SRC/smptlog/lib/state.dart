@@ -12,6 +12,7 @@ import 'core/adif.dart';
 import 'core/backup.dart';
 import 'core/db.dart';
 import 'core/models.dart';
+import 'core/update_checker.dart';
 import 'core/util.dart';
 import 'sync/cos.dart';
 import 'sync/secure.dart';
@@ -24,6 +25,7 @@ class AppSettings {
     this.adifFreqPolicy = 'down',
     this.dupWindowMinutes = 5,
     this.freqPolicyAsk = false,
+    this.checkUpdateOnStart = true,
   });
 
   final ThemeMode themeMode;
@@ -31,17 +33,22 @@ class AppSettings {
   final int dupWindowMinutes;
   final bool freqPolicyAsk;
 
+  /// 启动时自动检查更新（只查版本号，不下载）
+  final bool checkUpdateOnStart;
+
   AppSettings copyWith({
     ThemeMode? themeMode,
     String? adifFreqPolicy,
     int? dupWindowMinutes,
     bool? freqPolicyAsk,
+    bool? checkUpdateOnStart,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
         adifFreqPolicy: adifFreqPolicy ?? this.adifFreqPolicy,
         dupWindowMinutes: dupWindowMinutes ?? this.dupWindowMinutes,
         freqPolicyAsk: freqPolicyAsk ?? this.freqPolicyAsk,
+        checkUpdateOnStart: checkUpdateOnStart ?? this.checkUpdateOnStart,
       );
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +56,7 @@ class AppSettings {
         'adif_freq_policy': adifFreqPolicy,
         'dup_window': dupWindowMinutes,
         'freq_policy_ask': freqPolicyAsk,
+        'check_update': checkUpdateOnStart,
       };
 
   static AppSettings fromJson(Map<String, dynamic> j) => AppSettings(
@@ -59,6 +67,7 @@ class AppSettings {
         adifFreqPolicy: (j['adif_freq_policy'] ?? 'down').toString(),
         dupWindowMinutes: (j['dup_window'] as num?)?.toInt() ?? 5,
         freqPolicyAsk: (j['freq_policy_ask'] ?? false) == true,
+        checkUpdateOnStart: (j['check_update'] ?? true) == true,
       );
 }
 
@@ -73,6 +82,12 @@ class AppState extends ChangeNotifier {
 
   /// 默认中继台（打开「通过中继」时自动带入）
   String defaultRepeaterId = '';
+
+  /// 检测到的新版本（null 表示无新版本或未检测）
+  UpdateInfo? availableUpdate;
+  bool updateDismissed = false;
+
+  bool get showUpdateBanner => availableUpdate != null && !updateDismissed;
 
   // 同步状态
   bool syncConfigured = false;
@@ -126,6 +141,11 @@ class AppState extends ChangeNotifier {
     defaultRepeaterId = db.kvGet('default_repeater_id') ?? '';
 
     await reload();
+
+    // 启动时静默检查更新（仅查版本号，不下载、不阻断界面）
+    if (settings.checkUpdateOnStart) {
+      checkForUpdate();
+    }
   }
 
   // ------------------------------------------------------------- 列表
@@ -239,6 +259,33 @@ class AppState extends ChangeNotifier {
   }
 
   // ------------------------------------------------------------- 设置
+
+  /// 检查更新。返回是否发现新版本；[silent] 为 true 时不抛异常。
+  Future<bool> checkForUpdate({bool silent = true}) async {
+    try {
+      final info = await UpdateChecker.check(kAppVersion);
+      if (info == null) return false;
+      if (!UpdateChecker.isNewer(info.latest, kAppVersion)) {
+        if (availableUpdate != null) {
+          availableUpdate = null;
+          notifyListeners();
+        }
+        return false;
+      }
+      availableUpdate = info;
+      updateDismissed = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      if (!silent) rethrow;
+      return false;
+    }
+  }
+
+  void dismissUpdate() {
+    updateDismissed = true;
+    notifyListeners();
+  }
 
   /// 设置 / 取消默认中继台（传空字符串为取消）。
   Future<void> setDefaultRepeater(String id) async {

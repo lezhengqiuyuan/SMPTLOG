@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/models.dart';
+import '../core/update_checker.dart';
 import '../core/util.dart';
 import '../state.dart';
 import '../sync/cos.dart';
@@ -520,7 +521,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SMPTLOG 通联日志助手 · v1.0.0',
+              const Text('SMPTLOG 通联日志助手 · v$kAppVersion',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               const Text(
@@ -528,6 +529,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 12, color: AppColors.textSub),
               ),
               const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '启动时自动检查更新',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.textSub,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: s.checkUpdateOnStart,
+                    onChanged: (v) => app.updateSettings(
+                      s.copyWith(checkUpdateOnStart: v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const AboutPage()),

@@ -1,6 +1,8 @@
 /// 应用主题：浅蓝为主，深色可选，默认跟随系统。
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 /// 设计令牌（与需求定稿色板一一对应）。
@@ -32,6 +34,21 @@ class Breakpoints {
 }
 
 class AppTheme {
+  /// 字体回退：只列**当前平台真实存在**的字体。
+  ///
+  /// 之前把 Microsoft YaHei / PingFang SC 写给所有平台，
+  /// Android 上这些家族不存在，会走异常回退（字宽、行高、装饰线均可能跑偏）。
+  static List<String>? get _fontFallback {
+    if (Platform.isWindows) {
+      return const ['Microsoft YaHei', 'Segoe UI'];
+    }
+    if (Platform.isMacOS || Platform.isIOS) {
+      return const ['PingFang SC'];
+    }
+    // Android / Linux：交给系统默认（思源黑体 / Noto Sans CJK）
+    return null;
+  }
+
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
@@ -49,7 +66,7 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.bg,
       dividerColor: AppColors.divider,
       fontFamily: _fontFamily,
-      fontFamilyFallback: const ['Microsoft YaHei', 'PingFang SC', 'Noto Sans SC'],
+      fontFamilyFallback: _fontFallback,
       visualDensity: VisualDensity.standard,
       cardTheme: CardThemeData(
         color: AppColors.card,
@@ -161,7 +178,7 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.darkBg,
       dividerColor: AppColors.darkDivider,
       fontFamily: _fontFamily,
-      fontFamilyFallback: const ['Microsoft YaHei', 'PingFang SC', 'Noto Sans SC'],
+      fontFamilyFallback: _fontFallback,
       cardTheme: CardThemeData(
         color: AppColors.darkCard,
         elevation: 0,

@@ -17,7 +17,7 @@
 
 $ErrorActionPreference = 'Stop'
 
-$version  = '1.0.0'
+$version  = '1.1.0'
 $projRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = Split-Path -Parent (Split-Path -Parent $projRoot)
 $release  = Join-Path $projRoot 'build\windows\x64\runner\Release'

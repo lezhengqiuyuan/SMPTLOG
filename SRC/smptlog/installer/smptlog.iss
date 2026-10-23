@@ -3,7 +3,7 @@
 ; 用法（在 SRC/smptlog 目录下）：
 ;   1. 先执行 flutter build windows --release
 ;   2. iscc installer\smptlog.iss
-; 产物：..\..\EXE\SMPTLOG-Setup-1.0.0.exe
+; 产物：..\..\EXE\SMPTLOG-Setup-1.1.0.exe
 ;
 ; 设计要点：
 ; - 当前用户安装（PrivilegesRequired=lowest），不需要管理员权限
@@ -13,7 +13,7 @@
 
 #define MyAppName "SMPTLOG 通联日志"
 #define MyAppShortName "SMPTLOG"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "SMPTLOG"
 #define MyAppExeName "smptlog.exe"
 

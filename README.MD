@@ -76,14 +76,14 @@
 
 ### Windows
 
-1. 双击 `EXE/SMPTLOG-Setup-1.0.0.exe`
+1. 双击 `EXE/SMPTLOG-Setup-1.1.0.exe`
 2. 一路下一步（**当前用户安装，不需要管理员权限**）
 3. 程序装到 `%LOCALAPPDATA%\Programs\SMPTLOG`
 4. 数据在 `%LOCALAPPDATA%\SMPTLOG\data\smptlog.db`（卸载时可选保留）
 
 ### Android
 
-1. 安装 `APK/SMPTLOG-v1.0.0.apk`（需要允许「安装未知来源应用」）
+1. 安装 `APK/SMPTLOG-v1.1.0.apk`（需要允许「安装未知来源应用」）
 2. 最低支持 **Android 8.0（API 26）**
 3. 首次启动若提示通知权限，建议允许（用于导入完成/同步失败提示）
 
@@ -234,7 +234,7 @@ flutter build windows --release
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File installer\build_installer.ps1
-# 产物：..\..\EXE\SMPTLOG-Setup-1.0.0.exe
+# 产物：..\..\EXE\SMPTLOG-Setup-1.1.0.exe
 ```
 
 脚本分三步：编译卸载程序 → 用 `tar.exe` 把程序目录打成 `app.zip` → 把两者作为内嵌资源编进安装包。CI（[`release.yml`](.github/workflows/release.yml)）执行的是同一套步骤，所以发布产物可以从源码重现。
@@ -378,6 +378,7 @@ Android 设置里允许「安装未知来源应用」，或在文件管理器里
 
 - 默认纯本地运行，不联网、不上报
 - 仅当用户主动点「同步」时，才将日志上传到**用户自己配置**的存储服务（EdgeOne Makers Blob 或自选 WebDAV），项目方没有任何服务器
+- 「检查更新」仅在你主动点击时访问 GitHub 公共 API 获取版本号，不发送任何本地数据
 - 同步凭据只存本机（Windows DPAPI / Android Keystore），不进数据库、不进导出文件
 - 无统计、无埋点、无广告、无自动更新
 

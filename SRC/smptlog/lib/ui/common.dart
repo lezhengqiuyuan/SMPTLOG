@@ -549,6 +549,9 @@ class SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
+                    color: AppColors.textMain,
+                    decoration: TextDecoration.none,
+                    backgroundColor: Colors.transparent,
                   ),
                 ),
                 const Spacer(),

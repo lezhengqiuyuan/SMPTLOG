@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../core/update_checker.dart';
 import '../state.dart';
 import 'common.dart';
 import 'theme.dart';
@@ -32,7 +33,7 @@ class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
   static const String appName = 'SMPTLOG 通联日志';
-  static const String version = '1.0.0';
+  static const String version = kAppVersion;
   static const String callsign = 'BG5SWK';
   static const String blogUrl = 'https://www.smallpatch.cn';
   static const String blogLabel = 'www.smallpatch.cn';
@@ -41,10 +42,32 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 从设置页 push 进来时，没有外壳的 Scaffold，
+    // 内容会直接铺在黑色窗口背景上（很丑）；这里自带上标题栏。
+    final pushed = Navigator.of(context).canPop();
+    final body = _content(context, padded: pushed);
+
+    if (pushed) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('关于')),
+        body: body,
+      );
+    }
+    return body;
+  }
+
+  Widget _content(BuildContext context, {required bool padded}) {
     final app = context.watch<AppState>();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+    // 显式指定基础文字样式，避免继承到外部（系统/主题）的文字装饰。
+    return DefaultTextStyle.merge(
+      style: const TextStyle(
+        color: AppColors.textMain,
+        decoration: TextDecoration.none,
+        backgroundColor: Colors.transparent,
+      ),
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(padded ? 16 : 0, 8, padded ? 16 : 0, 40),
       children: [
         _hero(context),
         const SizedBox(height: 14),
@@ -52,9 +75,11 @@ class AboutPage extends StatelessWidget {
         const SizedBox(height: 14),
         _opensourceCard(context),
         const SizedBox(height: 14),
+        const _UpdateCard(),
+        const SizedBox(height: 14),
         _featuresCard(),
         const SizedBox(height: 14),
-        _privacyCard(app),
+        _privacyCard(context, app),
         const SizedBox(height: 14),
         _techCard(),
         const SizedBox(height: 14),
@@ -67,6 +92,7 @@ class AboutPage extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -76,9 +102,10 @@ class AboutPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
+        // 固定浅蓝，不依赖叠加透明度（否则深色背景下会发黑）
+        color: const Color(0xFFEAF2FF),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: const Color(0xFFCFE0FB)),
       ),
       child: Row(
         children: [
@@ -283,7 +310,7 @@ class AboutPage extends StatelessWidget {
     }
   }
 
-  /// 双行信息行（标签 + 值 + 右侧操作）。
+  /// 信息行：宽屏为「标签 + 值 + 操作」，窄屏改为上下两行。
   Widget _infoRow({
     required IconData icon,
     required String label,
@@ -292,30 +319,82 @@ class AboutPage extends StatelessWidget {
     List<Widget> actions = const [],
     VoidCallback? onTapValue,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 18, color: AppColors.primary),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 108,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 12.5, color: AppColors.textSub),
-          ),
-        ),
-        Expanded(
-          child: InkWell(
-            onTap: onTapValue,
-            borderRadius: BorderRadius.circular(6),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(value, style: valueStyle),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final narrow = c.maxWidth < 460;
+        final labelLine = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12.5, color: AppColors.textSub),
             ),
-          ),
-        ),
-        ...actions,
-      ],
+          ],
+        );
+
+        if (narrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  labelLine,
+                  const Spacer(),
+                  ...actions,
+                ],
+              ),
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: onTapValue,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 28, bottom: 4),
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: valueStyle,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 108,
+              child: Text(
+                label,
+                style:
+                    const TextStyle(fontSize: 12.5, color: AppColors.textSub),
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: onTapValue,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: valueStyle,
+                  ),
+                ),
+              ),
+            ),
+            ...actions,
+          ],
+        );
+      },
     );
   }
 
@@ -386,12 +465,13 @@ class AboutPage extends StatelessWidget {
 
   // ------------------------------------------------------------- 隐私
 
-  Widget _privacyCard(AppState app) {
+  Widget _privacyCard(BuildContext context, AppState app) {
     const points = <String>[
       '默认纯本地运行，不联网、不上传任何数据',
       '只有你主动点「同步」才会把日志上传到你自己的 EdgeOne 空间',
       'API Token 与同步密码只存在本机（Windows DPAPI / Android Keystore）',
       '任何导出文件都不含 Token 与密码',
+      '「检查更新」仅在你主动点击时访问 GitHub API，不发送任何本地数据',
       '没有账号、没有统计、没有埋点',
     ];
 
@@ -400,9 +480,34 @@ class AboutPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableText(
-            '数据目录：${app.db.dataDir.path}',
-            style: const TextStyle(fontSize: 11.5, color: AppColors.textHint),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '数据目录：${app.db.dataDir.path}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: '复制数据目录',
+                visualDensity: VisualDensity.compact,
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: app.db.dataDir.path),
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已复制数据目录')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 15),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           for (final p in points)
@@ -515,5 +620,158 @@ class AboutPage extends StatelessWidget {
         SnackBar(content: Text('无法打开浏览器，链接已复制：$blogUrl')),
       );
     }
+  }
+}
+
+/// 软件更新卡片：手动检查 GitHub Releases。
+class _UpdateCard extends StatefulWidget {
+  const _UpdateCard();
+
+  @override
+  State<_UpdateCard> createState() => _UpdateCardState();
+}
+
+class _UpdateCardState extends State<_UpdateCard> {
+  bool _busy = false;
+  String _msg = '';
+  bool _newer = false;
+  UpdateInfo? _info;
+
+  Future<void> _check() async {
+    setState(() {
+      _busy = true;
+      _msg = '';
+      _newer = false;
+      _info = null;
+    });
+    try {
+      final r = await UpdateChecker.check(AboutPage.version);
+      if (!mounted) return;
+      if (r == null) {
+        setState(() => _msg = '仓库还没有发布版本');
+      } else {
+        final newer = UpdateChecker.isNewer(r.latest, AboutPage.version);
+        setState(() {
+          _info = r;
+          _newer = newer;
+          _msg = newer
+              ? '发现新版本 v${r.latest}（当前 v${AboutPage.version}）'
+              : '已是最新版本（v${AboutPage.version}）';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _msg = '检查失败：$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openRelease() async {
+    final url = _info?.url ?? UpdateChecker.releasesPage;
+    try {
+      await PlatformLinks.open(url);
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: url));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('无法打开浏览器，链接已复制：$url')),
+      );
+    }
+  }
+
+  Future<void> _showNotes() async {
+    final info = _info;
+    if (info == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        title: '更新说明 v${info.latest}',
+        child: SizedBox(
+          height: 280,
+          child: SingleChildScrollView(
+            child: Text(
+              info.notes.isEmpty ? '该版本没有填写更新说明。' : info.notes,
+              style: const TextStyle(fontSize: 12.5, height: 1.6),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openRelease();
+            },
+            child: const Text('去下载'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: '软件更新',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '当前版本 v${AboutPage.version}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: _busy ? null : _check,
+                icon: _busy
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 16),
+                label: Text(_busy ? '检查中…' : '检查更新'),
+              ),
+            ],
+          ),
+          if (_msg.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              _msg,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: _newer ? AppColors.primary : AppColors.textSub,
+              ),
+            ),
+          ],
+          if (_newer && _info != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: _openRelease,
+                  icon: const Icon(Icons.download, size: 16),
+                  label: const Text('去下载'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _showNotes,
+                  child: const Text('查看更新说明'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

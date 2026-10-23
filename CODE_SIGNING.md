@@ -43,7 +43,7 @@
 右键安装包 → 属性 → 数字签名，签名者应显示为 **SignPath Foundation**；也可以用 PowerShell 查看：
 
 ```powershell
-Get-AuthenticodeSignature .\SMPTLOG-Setup-1.0.0.exe | Format-List Status, SignerCertificate
+Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.0.exe | Format-List Status, SignerCertificate
 ```
 
 其中 `Status`（校验状态）应为 `Valid`，`SignerCertificate`（签名证书）的主体应为 `SignPath Foundation`。
@@ -65,7 +65,9 @@ Get-AuthenticodeSignature .\SMPTLOG-Setup-1.0.0.exe | Format-List Status, Signer
 补充说明：
 
 - 程序默认**纯本地运行**，不联网、不上报任何数据。
-- 唯一的网络行为是**用户主动点击「同步」**时，将日志上传到**用户自己配置**的存储服务（腾讯云 EdgeOne Makers Blob 或用户自选的 WebDAV 服务）。地址与凭据均由用户填写，项目方不持有任何服务器。
+- 唯一的网络行为有两处，都需要**用户主动触发**：
+  1. 点击「同步」：将日志上传到**用户自己配置**的存储服务（腾讯云 EdgeOne Makers Blob 或用户自选的 WebDAV 服务）。地址与凭据均由用户填写，项目方不持有任何服务器。
+  2. 点击「检查更新」：向 GitHub 公共 API 查询本项目的最新 Release 版本号，不发送任何本地数据。
 - 同步凭据（API Token / 应用密码）只保存在用户本机（Windows DPAPI、Android Keystore），不写入数据库、不进入任何导出文件。
 - 程序不含统计、埋点、广告或自动更新检查。
 
