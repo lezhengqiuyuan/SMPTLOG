@@ -1,0 +1,182 @@
+name: Build & Release
+
+# 触发方式：
+#   1. 推送 v* 标签（如 v1.0.0）→ 自动构建三端产物并创建 GitHub Release
+#   2. 手动在 Actions 页面点 Run workflow → 只构建并上传 artifact，不发布
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: SRC/smptlog
+  APP_VERSION: 1.0.0
+
+jobs:
+  # ---------------------------------------------------------------- Windows
+  windows:
+    name: Windows 安装包
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 拉取依赖
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter pub get
+
+      - name: 静态检查与单元测试
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          flutter analyze --no-fatal-warnings
+          flutter test
+
+      - name: 构建 Windows Release
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter build windows --release
+
+      # 安装包由仓库内的 C# 源码编译而来（不使用自解压外壳），
+      # 保证「二进制来自本仓库的源码」，符合代码签名政策的要求。
+      - name: 编译安装包与卸载程序
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $csc = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          $work = Join-Path $env:RUNNER_TEMP 'pkg'
+          New-Item -ItemType Directory -Path $work -Force | Out-Null
+
+          # 1) 程序文件打包
+          & "$env:SystemRoot\System32\tar.exe" -a -c -f "$work\app.zip" `
+              -C 'build\windows\x64\runner\Release' .
+          if ($LASTEXITCODE -ne 0) { throw 'tar 打包失败' }
+
+          # 2) 卸载程序
+          & $csc /nologo /target:winexe /out:"$work\uninstall.exe" `
+              /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+              'installer\src\Uninstaller.cs' 'installer\src\AssemblyInfo.cs'
+          if ($LASTEXITCODE -ne 0) { throw 'Uninstaller 编译失败' }
+
+          # 3) 单文件安装包（程序与卸载器作为内嵌资源）
+          New-Item -ItemType Directory -Path '..\..\EXE' -Force | Out-Null
+          $out = "..\..\EXE\SMPTLOG-Setup-$env:APP_VERSION.exe"
+          & $csc /nologo /target:winexe /out:$out `
+              "/resource:$work\app.zip,app.zip" `
+              "/resource:$work\uninstall.exe,uninstall.exe" `
+              /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+              /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll `
+              'installer\src\Installer.cs' 'installer\src\AssemblyInfo.cs'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer 编译失败' }
+
+          Get-Item $out | Format-List Name, Length
+
+      # 可选：申请通过后启用下面这段，把安装包提交给 SignPath 签名
+      #
+      # - name: 提交签名请求（SignPath Foundation）
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+      #     project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+      #     signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      #     wait-for-completion: true
+      #     output-artifact-directory: signed
+
+      - name: 上传 Windows 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: EXE/SMPTLOG-Setup-*.exe
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------- Android
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 拉取依赖
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter pub get
+
+      - name: 构建 APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter build apk --release --tree-shake-icons
+
+      - name: 整理产物
+        run: |
+          mkdir -p APK
+          cp SRC/smptlog/build/app/outputs/flutter-apk/app-release.apk \
+             "APK/SMPTLOG-v${APP_VERSION}.apk"
+          ls -lh APK
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: APK/SMPTLOG-*.apk
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------- Release
+  release:
+    name: 发布 Release
+    needs: [windows, android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载产物
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SMPTLOG ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/windows-installer/*.exe
+            dist/android-apk/*.apk
+          body: |
+            ## SMPTLOG 通联日志 ${{ github.ref_name }}
+
+            业余无线电通联日志助手 · Android + Windows 双端 · 本地优先
+
+            ### 下载
+            | 平台 | 文件 | 说明 |
+            |---|---|---|
+            | Windows 10/11 (x64) | `SMPTLOG-Setup-*.exe` | 双击安装，免管理员权限 |
+            | Android 8.0+ | `SMPTLOG-v*.apk` | 需允许「安装未知来源应用」 |
+
+            ### 说明
+            - 数据默认只存本地，云同步为可选功能
+            - 详细说明见 [README](https://github.com/${{ github.repository }}#readme)
+            - 代码签名政策见 [CODE_SIGNING.md](https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING.md)
+
+            > 本产物由 GitHub Actions 从本仓库源码自动构建。

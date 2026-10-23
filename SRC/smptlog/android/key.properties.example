@@ -1,0 +1,16 @@
+# 签名配置模板。
+#
+# 用法：
+# 1. 把本文件复制为 key.properties
+# 2. 生成 keystore（在项目 android/app 目录下执行）：
+#    keytool -genkeypair -v -keystore smptlog-release.jks -alias smptlog `
+#            -keyalg RSA -keysize 2048 -validity 10950
+# 3. 填写下面的四项（文件路径相对 android/app）
+# 4. 务必备份 .jks 与口令，丢失后无法再发布升级版本
+#
+# 注意：key.properties 与 *.jks 已写入 .gitignore，不会提交到 Git。
+
+storePassword=改成你的口令
+keyPassword=改成你的口令
+keyAlias=smptlog
+storeFile=smptlog-release.jks
