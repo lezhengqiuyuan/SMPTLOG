@@ -65,7 +65,7 @@
 │       ├── docs/            数据规范
 │       └── test/            单元测试（网格/几何/ADIF/判重）
 ├── APK/                     Release 产物
-├── EXE/                     Release 产物（Inno Setup 安装包）
+├── EXE/                     Release 产物（单文件安装程序）
 ├── TEMP/                    临时文件、参考工程、抓包与验证脚本
 └── README.MD
 ```
@@ -179,7 +179,7 @@
 | Visual Studio | 2022 / 2026，含「使用 C++ 的桌面开发」+ **Windows 11 SDK** | 缺 SDK 会报 `The current Visual Studio installation is incomplete` |
 | JDK | 17 / 21 / 25 | Gradle 9.3 已验证可跑 JDK 25 |
 | Android SDK | platforms 36 + build-tools 34+ | `sdkmanager` 可装 |
-| Inno Setup | 6.x | **可选**。当前安装包用 Windows 自带 IExpress 生成，无需额外安装任何工具 |
+| Inno Setup | 6.x | **可选**。发布用的单文件安装包由仓库内 C# 源码 + 系统自带 `csc.exe` 编译，无需装 Inno Setup |
 
 国内网络建议先设好镜像（用户环境变量）：
 
@@ -230,26 +230,22 @@ flutter build windows --release
 
 ### 6. 打安装包
 
-项目提供**两种**打包方式，任选其一：
-
-**方式一（默认，零额外依赖）：Windows 自带 IExpress**
+发布用的单文件安装包由仓库内的 C# 源码（`installer/src/Installer.cs`、`installer/src/Uninstaller.cs`）用系统自带的 `csc.exe` 编译而成，**不需要任何额外工具**：
 
 ```powershell
-# 1. 把 Release 目录打成 zip
-#    （项目已提供脚本：installer/build_installer.ps1）
-.\installer\build_installer.ps1
+powershell -ExecutionPolicy Bypass -File installer\build_installer.ps1
 # 产物：..\..\EXE\SMPTLOG-Setup-1.0.0.exe
 ```
 
+脚本分三步：编译卸载程序 → 用 `tar.exe` 把程序目录打成 `app.zip` → 把两者作为内嵌资源编进安装包。CI（[`release.yml`](.github/workflows/release.yml)）执行的是同一套步骤，所以发布产物可以从源码重现。
+
 安装包行为：解压到 `%LOCALAPPDATA%\Programs\SMPTLOG`（免管理员）、创建开始菜单与桌面快捷方式、注册卸载项（控制面板可见）、卸载时询问是否保留数据。
 
-**方式二：Inno Setup（需自装）**
+仓库同时保留一份 Inno Setup 脚本 `installer/smptlog.iss` 作为备选（需自行安装 Inno Setup）：
 
 ```powershell
 iscc installer\smptlog.iss
 ```
-
-> 注：SED 文件必须是 ASCII 编码，因此 IExpress 的输出路径也必须为纯 ASCII；脚本已处理（先输出到 ASCII 目录，再复制到 `EXE/`）。
 
 ---
 

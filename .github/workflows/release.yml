@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: read   # SignPath 签名动作需要读取本次运行的 artifact
 
 env:
   PROJECT_DIR: SRC/smptlog
@@ -79,19 +80,45 @@ jobs:
 
           Get-Item $out | Format-List Name, Length
 
-      # 可选：申请通过后启用下面这段，把安装包提交给 SignPath 签名
-      #
-      # - name: 提交签名请求（SignPath Foundation）
-      #   if: startsWith(github.ref, 'refs/tags/')
-      #   uses: signpath/github-action-submit-signing-request@v1
-      #   with:
-      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-      #     organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-      #     project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-      #     signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
-      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
-      #     wait-for-completion: true
-      #     output-artifact-directory: signed
+      # ---------------------------------------------- SignPath 代码签名（可选）
+      # 申请通过后在仓库 Settings → Secrets and variables → Actions 里配置：
+      #   Secret  SIGNPATH_API_TOKEN     SignPath API 令牌（具备提交者权限）
+      #   Var     SIGNPATH_ORG_ID        SignPath 组织 ID
+      #   Var     SIGNPATH_PROJECT_SLUG  SignPath 项目短名
+      #   Var     SIGNPATH_POLICY_SLUG   签名策略短名
+      # 未设置 SIGNPATH_PROJECT_SLUG 时下面三步全部跳过，产物保持未签名。
+      - name: 上传未签名安装包（供 SignPath 读取）
+        id: upload-unsigned
+        if: "startsWith(github.ref, 'refs/tags/v') && vars.SIGNPATH_PROJECT_SLUG != ''"
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-unsigned
+          path: EXE/SMPTLOG-Setup-*.exe
+          if-no-files-found: error
+
+      - name: 提交签名请求（SignPath Foundation）
+        if: "startsWith(github.ref, 'refs/tags/v') && vars.SIGNPATH_PROJECT_SLUG != ''"
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          # 每次签名都要 Approver 在 SignPath 网页端手动批准，留足 1 小时
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+
+      - name: 用已签名安装包覆盖未签名产物
+        if: "startsWith(github.ref, 'refs/tags/v') && vars.SIGNPATH_PROJECT_SLUG != ''"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $signed = Get-ChildItem -Path signed -Recurse -Filter '*.exe' | Select-Object -First 1
+          if (-not $signed) { throw 'SignPath 未返回已签名文件' }
+          Copy-Item $signed.FullName 'EXE' -Force
+          Get-Item (Join-Path 'EXE' $signed.Name) | Format-List Name, Length
 
       - name: 上传 Windows 产物
         uses: actions/upload-artifact@v4
@@ -177,6 +204,6 @@ jobs:
             ### 说明
             - 数据默认只存本地，云同步为可选功能
             - 详细说明见 [README](https://github.com/${{ github.repository }}#readme)
-            - 代码签名政策见 [CODE_SIGNING.md](https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING.md)
+            - Code signing policy（代码签名政策）见 [CODE_SIGNING.md](https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING.md)
 
             > 本产物由 GitHub Actions 从本仓库源码自动构建。
