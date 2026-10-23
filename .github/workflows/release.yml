@@ -204,6 +204,9 @@ jobs:
             ### 说明
             - 数据默认只存本地，云同步为可选功能
             - 详细说明见 [README](https://github.com/${{ github.repository }}#readme)
-            - Code signing policy（代码签名政策）见 [CODE_SIGNING.md](https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING.md)
+
+            ### Code signing policy（代码签名政策）
+            Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+            Windows 安装包使用 SignPath Foundation 提供的证书签名（申请通过后生效），签名范围与验证方法见 [CODE_SIGNING.md](https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING.md)。
 
             > 本产物由 GitHub Actions 从本仓库源码自动构建。
