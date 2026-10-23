@@ -289,7 +289,7 @@ class AboutPage extends StatelessWidget {
           _infoRow(
             icon: Icons.description_outlined,
             label: '许可证',
-            value: 'GPL-3.0 · 欢迎 Star 与 PR',
+            value: 'Apache-2.0 · 欢迎 Star 与 PR',
             valueStyle: const TextStyle(fontSize: 13, color: AppColors.textMain),
           ),
         ],

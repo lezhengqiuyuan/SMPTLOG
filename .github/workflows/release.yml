@@ -15,7 +15,7 @@ permissions:
 
 env:
   PROJECT_DIR: SRC/smptlog
-  APP_VERSION: 1.1.1
+  APP_VERSION: 1.1.6
 
 jobs:
   # ---------------------------------------------------------------- Windows
@@ -56,9 +56,10 @@ jobs:
           $work = Join-Path $env:RUNNER_TEMP 'pkg'
           New-Item -ItemType Directory -Path $work -Force | Out-Null
 
-          # 1) 程序文件打包
+          # 1) 程序文件打包（顺带装入 LICENSE 与 NOTICE，满足 Apache-2.0 第 4 条分发义务）
           & "$env:SystemRoot\System32\tar.exe" -a -c -f "$work\app.zip" `
-              -C 'build\windows\x64\runner\Release' .
+              -C 'build\windows\x64\runner\Release' . `
+              -C '..\..' LICENSE NOTICE
           if ($LASTEXITCODE -ne 0) { throw 'tar 打包失败' }
 
           # 2) 卸载程序

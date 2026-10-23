@@ -9,7 +9,7 @@ import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 
 /// 当前应用版本号（与 pubspec.yaml 保持一致）。
-const String kAppVersion = '1.1.1';
+const String kAppVersion = '1.1.6';
 
 class UpdateInfo {
   UpdateInfo({

@@ -3,7 +3,7 @@
 ; 用法（在 SRC/smptlog 目录下）：
 ;   1. 先执行 flutter build windows --release
 ;   2. iscc installer\smptlog.iss
-; 产物：..\..\EXE\SMPTLOG-Setup-1.1.0.exe
+; 产物：..\..\EXE\SMPTLOG-Setup-1.1.6.exe
 ;
 ; 设计要点：
 ; - 当前用户安装（PrivilegesRequired=lowest），不需要管理员权限
@@ -13,7 +13,7 @@
 
 #define MyAppName "SMPTLOG 通联日志"
 #define MyAppShortName "SMPTLOG"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.6"
 #define MyAppPublisher "SMPTLOG"
 #define MyAppExeName "smptlog.exe"
 
@@ -22,6 +22,7 @@ AppId={{8E5C1B36-3D2A-4C8E-9F71-5A2B7C4D9E10}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+LicenseFile=..\..\..\LICENSE
 DefaultDirName={localappdata}\Programs\{#MyAppShortName}
 DefaultGroupName={#MyAppShortName}
 DisableProgramGroupPage=yes
@@ -45,6 +46,9 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 [Files]
 ; Flutter 构建产物整目录复制
 Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 许可证与版权归属声明（Apache-2.0 第 4 条要求随二进制分发）
+Source: "..\..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\..\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

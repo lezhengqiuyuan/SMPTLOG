@@ -43,7 +43,7 @@
 右键安装包 → 属性 → 数字签名，签名者应显示为 **SignPath Foundation**；也可以用 PowerShell 查看：
 
 ```powershell
-Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.0.exe | Format-List Status, SignerCertificate
+Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.6.exe | Format-List Status, SignerCertificate
 ```
 
 其中 `Status`（校验状态）应为 `Valid`，`SignerCertificate`（签名证书）的主体应为 `SignPath Foundation`。
@@ -73,6 +73,8 @@ Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.0.exe | Format-List Status, Signer
 
 第三方组件说明：Flutter 引擎、SQLite（`sqlite3_flutter_libs`）等随包组件按其各自许可证分发，详见 `LICENSE` 与 `NOTICES`。
 
+本项目的 `LICENSE`（Apache-2.0 全文）与 `NOTICE`（版权归属）随安装包一同装入程序目录（默认 `%LOCALAPPDATA%\Programs\SMPTLOG`），Inno Setup 备用脚本的安装向导也会展示许可证全文。
+
 ## 用户交互方面的承诺
 
 - **安装与卸载**：安装程序为图形界面（中文），控制面板可卸载；卸载时明确询问是否保留通联数据，默认保留。
@@ -80,7 +82,7 @@ Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.0.exe | Format-List Status, Signer
 
 ## 许可证
 
-本项目以 **GNU General Public License v3.0** 发布，无商业双许可。详见 [LICENSE](LICENSE)。
+本项目以 **Apache License 2.0** 发布，详见 [LICENSE](LICENSE) 与版权归属声明 [NOTICE](NOTICE)。
 
 ---
 

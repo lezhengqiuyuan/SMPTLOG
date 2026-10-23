@@ -7,7 +7,7 @@
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.13%2B-00B8A9">
   <img alt="Android" src="https://img.shields.io/badge/Android-8.0%20(API%2026)%2B-3DDC84">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%2F11%20x64-0078D4">
-  <img alt="License" src="https://img.shields.io/badge/License-GPLv3-blue">
+  <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue">
 </p>
 
 **中文** | [English](README.en.md)
@@ -76,14 +76,14 @@
 
 ### Windows
 
-1. 双击 `EXE/SMPTLOG-Setup-1.1.0.exe`
+1. 双击 `EXE/SMPTLOG-Setup-1.1.6.exe`
 2. 一路下一步（**当前用户安装，不需要管理员权限**）
 3. 程序装到 `%LOCALAPPDATA%\Programs\SMPTLOG`
 4. 数据在 `%LOCALAPPDATA%\SMPTLOG\data\smptlog.db`（卸载时可选保留）
 
 ### Android
 
-1. 安装 `APK/SMPTLOG-v1.1.0.apk`（需要允许「安装未知来源应用」）
+1. 安装 `APK/SMPTLOG-v1.1.6.apk`（需要允许「安装未知来源应用」）
 2. 最低支持 **Android 8.0（API 26）**
 3. 首次启动若提示通知权限，建议允许（用于导入完成/同步失败提示）
 
@@ -234,7 +234,7 @@ flutter build windows --release
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File installer\build_installer.ps1
-# 产物：..\..\EXE\SMPTLOG-Setup-1.1.0.exe
+# 产物：..\..\EXE\SMPTLOG-Setup-1.1.6.exe
 ```
 
 脚本分三步：编译卸载程序 → 用 `tar.exe` 把程序目录打成 `app.zip` → 把两者作为内嵌资源编进安装包。CI（[`release.yml`](.github/workflows/release.yml)）执行的是同一套步骤，所以发布产物可以从源码重现。
@@ -384,5 +384,8 @@ Android 设置里允许「安装未知来源应用」，或在文件管理器里
 
 ## 许可
 
-本项目以 **GNU General Public License v3.0** 发布（无商业双许可），全文见 [LICENSE](LICENSE)。
+本项目以 **Apache License 2.0** 发布，全文见 [LICENSE](LICENSE)，版权与归属声明见 [NOTICE](NOTICE)。
+
+- 允许商用、修改、再分发与闭源分发，但须保留版权、许可与归属声明（见许可证第 4 条）
+
 

@@ -7,7 +7,7 @@
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.13%2B-00B8A9">
   <img alt="Android" src="https://img.shields.io/badge/Android-8.0%20(API%2026)%2B-3DDC84">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%2F11%20x64-0078D4">
-  <img alt="License" src="https://img.shields.io/badge/License-GPLv3-blue">
+  <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue">
 </p>
 
 **English** | [中文](README.MD)
@@ -76,14 +76,14 @@ A contact logbook built for radio amateurs to use themselves. Manual entry, ADIF
 
 ### Windows
 
-1. Run `EXE/SMPTLOG-Setup-1.1.0.exe`
+1. Run `EXE/SMPTLOG-Setup-1.1.6.exe`
 2. Follow the wizard — **per-user install, no administrator rights needed**
 3. Installs to `%LOCALAPPDATA%\Programs\SMPTLOG`
 4. Data lives in `%LOCALAPPDATA%\SMPTLOG` (kept on uninstall unless you say otherwise)
 
 ### Android
 
-1. Install `APK/SMPTLOG-v1.1.0.apk` (allow "install from unknown sources")
+1. Install `APK/SMPTLOG-v1.1.6.apk` (allow "install from unknown sources")
 2. Minimum **Android 8.0 (API 26)**
 3. Grant the notification permission if prompted (import finished / sync failed notices)
 
@@ -268,4 +268,4 @@ No local-only operation ever touches the network. The single network activity is
 
 ## License
 
-Released under the **GNU General Public License v3.0** (no commercial dual licensing). See [LICENSE](LICENSE).
+Released under the **Apache License 2.0**. See [LICENSE](LICENSE) and the attribution notice in [NOTICE](NOTICE).

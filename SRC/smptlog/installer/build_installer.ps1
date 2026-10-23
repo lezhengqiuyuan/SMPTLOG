@@ -17,7 +17,7 @@
 
 $ErrorActionPreference = 'Stop'
 
-$version  = '1.1.0'
+$version  = '1.1.6'
 $projRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = Split-Path -Parent (Split-Path -Parent $projRoot)
 $release  = Join-Path $projRoot 'build\windows\x64\runner\Release'
@@ -41,8 +41,9 @@ Write-Host '1/3 编译卸载程序…'
     /r:System.Windows.Forms.dll /r:System.Drawing.dll "$srcDir\Uninstaller.cs" "$srcDir\AssemblyInfo.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Uninstaller.cs 编译失败' }
 
-Write-Host '2/3 打包程序文件…'
-& "$env:SystemRoot\System32\tar.exe" -a -c -f "$work\app.zip" -C $release .
+Write-Host '2/3 打包程序文件（含 LICENSE 与 NOTICE）…'
+& "$env:SystemRoot\System32\tar.exe" -a -c -f "$work\app.zip" `
+    -C $release . -C $repoRoot LICENSE NOTICE
 if ($LASTEXITCODE -ne 0) { throw 'tar 打包失败' }
 
 Write-Host '3/3 生成单文件安装包…'
