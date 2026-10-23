@@ -106,7 +106,7 @@ static class InstallerProgram
         f.Controls.Add(title);
 
         Label sub = new Label();
-        sub.Text = "版本 1.1.6 · 业余无线电通联日志助手";
+        sub.Text = "版本 1.1.7 · 业余无线电通联日志助手";
         sub.ForeColor = Color.FromArgb(107, 124, 153);
         sub.SetBounds(24, 56, 410, 20);
         f.Controls.Add(sub);
@@ -257,7 +257,7 @@ static class InstallerProgram
         using (RegistryKey key = Registry.CurrentUser.CreateSubKey(keyPath))
         {
             key.SetValue("DisplayName", "SMPTLOG 通联日志");
-            key.SetValue("DisplayVersion", "1.1.6");
+            key.SetValue("DisplayVersion", "1.1.7");
             key.SetValue("Publisher", "SMPTLOG");
             key.SetValue("InstallLocation", Dest);
             key.SetValue("DisplayIcon", appExe);

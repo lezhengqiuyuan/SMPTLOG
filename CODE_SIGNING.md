@@ -43,7 +43,7 @@
 右键安装包 → 属性 → 数字签名，签名者应显示为 **SignPath Foundation**；也可以用 PowerShell 查看：
 
 ```powershell
-Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.6.exe | Format-List Status, SignerCertificate
+Get-AuthenticodeSignature .\SMPTLOG-Setup-1.1.7.exe | Format-List Status, SignerCertificate
 ```
 
 其中 `Status`（校验状态）应为 `Valid`，`SignerCertificate`（签名证书）的主体应为 `SignPath Foundation`。

@@ -76,14 +76,14 @@ A contact logbook built for radio amateurs to use themselves. Manual entry, ADIF
 
 ### Windows
 
-1. Run `EXE/SMPTLOG-Setup-1.1.6.exe`
+1. Run `EXE/SMPTLOG-Setup-1.1.7.exe`
 2. Follow the wizard — **per-user install, no administrator rights needed**
 3. Installs to `%LOCALAPPDATA%\Programs\SMPTLOG`
 4. Data lives in `%LOCALAPPDATA%\SMPTLOG` (kept on uninstall unless you say otherwise)
 
 ### Android
 
-1. Install `APK/SMPTLOG-v1.1.6.apk` (allow "install from unknown sources")
+1. Install `APK/SMPTLOG-v1.1.7.apk` (allow "install from unknown sources")
 2. Minimum **Android 8.0 (API 26)**
 3. Grant the notification permission if prompted (import finished / sync failed notices)
 

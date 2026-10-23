@@ -13,7 +13,7 @@
 
 #define MyAppName "SMPTLOG 通联日志"
 #define MyAppShortName "SMPTLOG"
-#define MyAppVersion "1.1.6"
+#define MyAppVersion "1.1.7"
 #define MyAppPublisher "SMPTLOG"
 #define MyAppExeName "smptlog.exe"
 
