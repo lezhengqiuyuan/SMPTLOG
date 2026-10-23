@@ -135,11 +135,6 @@ class ImportService {
         failed++;
       } else {
         final existing = db.getQsoIncludeDeleted(q.uuid);
-        if (existing != null) {
-          updated++;
-        } else {
-          added++;
-        }
 
         var toInsert = q;
         if (windowMinutes > 0) {
@@ -176,6 +171,12 @@ class ImportService {
               );
             }
           }
+        }
+        // 计数放在判重之后：被跳过的记录不应计入新增/更新
+        if (existing != null) {
+          updated++;
+        } else {
+          added++;
         }
         batch.add(toInsert);
         recent.add(toInsert);
