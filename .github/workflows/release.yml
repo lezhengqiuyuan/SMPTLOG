@@ -57,10 +57,13 @@ jobs:
           New-Item -ItemType Directory -Path $work -Force | Out-Null
 
           # 1) 程序文件打包（顺带装入 LICENSE 与 NOTICE，满足 Apache-2.0 第 4 条分发义务）
+          # 注意：tar 的多个 -C 是累积相对路径，先把两个文件复制进产物目录再打包，避免路径错位
+          Copy-Item '..\..\LICENSE' 'build\windows\x64\runner\Release\LICENSE' -Force
+          Copy-Item '..\..\NOTICE' 'build\windows\x64\runner\Release\NOTICE' -Force
           & "$env:SystemRoot\System32\tar.exe" -a -c -f "$work\app.zip" `
-              -C 'build\windows\x64\runner\Release' . `
-              -C '..\..' LICENSE NOTICE
+              -C 'build\windows\x64\runner\Release' .
           if ($LASTEXITCODE -ne 0) { throw 'tar 打包失败' }
+          Remove-Item 'build\windows\x64\runner\Release\LICENSE', 'build\windows\x64\runner\Release\NOTICE' -Force
 
           # 2) 卸载程序
           & $csc /nologo /target:winexe /out:"$work\uninstall.exe" `
